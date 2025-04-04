@@ -7,19 +7,6 @@ import (
 	"github.com/rs/zerolog"
 )
 
-const (
-	SERVICE_DBUS  = "org.freedesktop.DBus"
-	SERVICE_MPRIS = "org.mpris.MediaPlayer2"
-
-	PLAYER_PLAY  = SERVICE_MPRIS + ".Player.Play"
-	PLAYER_PAUSE = SERVICE_MPRIS + ".Player.Pause"
-
-	MPRIS_LIST_PLAYERS = SERVICE_DBUS + ".ListNames"
-
-	PROPERTY_OWNER_CHANGE = "NameOwnerChanged"
-	OBJECT_MPRIS          = "/org/mpris/MediaPlayer2"
-)
-
 var log zerolog.Logger
 var conn *dbus.Conn
 
@@ -60,7 +47,7 @@ func SetActivePlayer() error {
 
 	log.Debug().Msg("Searching for a player a player ...")
 	for _, n := range names {
-		AddPlayer(&Signal{Name: n})
+		SetPlayer(&Signal{Name: n})
 		return nil
 	}
 	log.Debug().Msg("No active players found")

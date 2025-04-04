@@ -1,22 +1,20 @@
 package mpris
 
 import (
-	"sync"
-
 	"github.com/godbus/dbus/v5"
 )
 
-var Players sync.Map
 var ActivePlayer *Player
 
 type Player struct {
-	Name   string
-	ID     string
-	State  bool
-	Object dbus.BusObject
+	Name     string
+	ID       string
+	State    bool
+	Object   dbus.BusObject
+	Metadata map[string]any
 }
 
-func AddPlayer(data *Signal) {
+func SetPlayer(data *Signal) {
 	state := false
 	if data.NewOwner != "" {
 		state = true
@@ -32,29 +30,52 @@ func AddPlayer(data *Signal) {
 		State:  state,
 		Object: playerObj,
 	}
-	Players.Store(data.Name, newPlayer)
 	ActivePlayer = newPlayer
 	log.Debug().Msgf("%s set as the active player", newPlayer.Name)
+
+	ActivePlayer.UpdatePlayerState()
+	ActivePlayer.UpdatePlayerMetadata()
 }
 
-func GetPlayer(name string) (*Player, bool) {
-	player, err := Players.Load(name)
-	return player.(*Player), err
+func (p *Player) PlayerState() bool {
+	return p.State
 }
 
-func DeletePlayer(name string) {
-	Players.Delete(name)
-}
-
-func PlayerExists(name string) bool {
-	_, exists := Players.Load(name)
-	return exists
-}
-
-func PlayerState(name string) bool {
-	player, ok := GetPlayer(name)
-	if !ok {
-		return false
+func (p *Player) UpdatePlayerState() {
+	variant, err := p.Object.GetProperty(PLAYER_STATUS)
+	if err != nil {
+		log.Error().Err(err).Str("Player Name", p.Name).Msg("Failed to get player state")
+		return
 	}
-	return player.State
+
+	status, ok := variant.Value().(string)
+	if !ok {
+		log.Error().Msg("Failed to cast player variant into string")
+
+	}
+	log.Debug().Str("status", status).Str("player", p.Name).Msg("Player status retrieved")
+
+	p.State = status == STATUS_PLAYING
+}
+
+func (p *Player) UpdatePlayerMetadata() {
+	variant, err := p.Object.GetProperty(PLAYER_METADATA)
+	if err != nil {
+		log.Error().Err(err).Str("Player Name", p.Name).Msg("Failed to get player metadata")
+		return
+	}
+
+	rawData, ok := variant.Value().(map[string]dbus.Variant)
+	if !ok {
+		log.Error().Msg("Failed to cast player metadata into map[string]any")
+
+	}
+	log.Debug().Str("player", p.Name).Msg("Player metadata retrieved")
+
+	data := make(map[string]any)
+	for k, v := range rawData {
+		data[k] = v.Value()
+	}
+
+	p.Metadata = data
 }

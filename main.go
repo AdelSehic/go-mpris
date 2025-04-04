@@ -31,10 +31,7 @@ func main() {
 			mpris.SetActivePlayer()
 			continue
 		}
-		if mpris.PlayerExists(data.Name) {
-			mpris.DeletePlayer(data.Name)
-		}
-		mpris.AddPlayer(data)
+		mpris.SetPlayer(data)
 	}
 }
 
@@ -56,6 +53,8 @@ func scanInput(logger *zerolog.Logger) {
 		case "l":
 			players, _ := mpris.GetActivePlayers()
 			logger.Info().Str("players", strings.Join(players, ", ")).Msg("Active players")
+		case "m":
+			logger.Info().Any("Metadata", mpris.ActivePlayer.Metadata).Msg("Player metadata")
 		default:
 			logger.Info().Msg("Unkown command")
 		}

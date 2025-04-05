@@ -25,8 +25,8 @@ func main() {
 	go scanInput(&logger)
 
 	for signal := range signals {
+		logger.Debug().Msgf("New message: %+v", signal.Body...)
 		data := mpris.ParseSignal(signal.Body)
-		logger.Debug().Msgf("New message: %+v", data)
 		if data.NewOwner == "" {
 			mpris.SetActivePlayer()
 			continue
@@ -54,6 +54,7 @@ func scanInput(logger *zerolog.Logger) {
 			players, _ := mpris.GetActivePlayers()
 			logger.Info().Str("players", strings.Join(players, ", ")).Msg("Active players")
 		case "m":
+			mpris.ActivePlayer.UpdatePlayerMetadata()
 			logger.Info().Any("Metadata", mpris.ActivePlayer.Metadata).Msg("Player metadata")
 		default:
 			logger.Info().Msg("Unkown command")

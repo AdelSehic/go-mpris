@@ -4,6 +4,7 @@ type Signal struct {
 	Name     string
 	OldOwner string
 	NewOwner string
+	Type     string
 }
 
 func ParseSignal(body []any) *Signal {

@@ -1,6 +1,7 @@
 package mpris
 
 import (
+	"math"
 	"strings"
 
 	"github.com/godbus/dbus/v5"
@@ -29,6 +30,15 @@ func StartListening() (chan *dbus.Signal, error) {
 		return nil, err
 	}
 
+	// Listen for property changes (track changes, play/pause, etc.)
+	if err := conn.AddMatchSignal(
+		dbus.WithMatchInterface(DBUS_PROPERTIES),
+		dbus.WithMatchMember(PROPERTIES_CHANGED),
+		dbus.WithMatchSender(SERVICE_MPRIS),
+	); err != nil {
+		return nil, err
+	}
+
 	signals := make(chan *dbus.Signal, 10)
 	conn.Signal(signals)
 
@@ -45,13 +55,39 @@ func SetActivePlayer() error {
 		return err
 	}
 
-	log.Debug().Msg("Searching for a player a player ...")
+	players := make([]string, 0, 5)
+	log.Debug().Msg("Searching for a player ...")
 	for _, n := range names {
-		SetPlayer(&Signal{Name: n})
+		if strings.HasSuffix(n, "playerctld") {
+			continue
+		}
+		players = append(players, n)
+	}
+
+	if len(players) == 0 {
+		log.Debug().Msg("No active players found")
 		return nil
 	}
-	log.Debug().Msg("No active players found")
+
+	playerIndex := findPlayerByPriority(players)
+	SetPlayer(&Signal{Name: players[playerIndex]})
+
 	return nil
+}
+
+func findPlayerByPriority(players []string) int {
+	firefox := math.MaxInt
+	for k, name := range players {
+		if strings.Contains(name, "spotify") {
+			return k
+		} else if strings.Contains(name, "firefox") {
+			firefox = k
+		}
+	}
+	if firefox != math.MaxInt {
+		return firefox
+	}
+	return 0
 }
 
 func GetActivePlayers() ([]string, error) {

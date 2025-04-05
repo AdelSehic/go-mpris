@@ -17,6 +17,11 @@ func main() {
 	mpris.InitLogger(logger)
 	logger.Info().Msg("Starting the application")
 
+	pipes, err := StartPipes()
+	if err != nil {
+		logger.Fatal().Err(err).Msg("Couldn't start the pipes")
+	}
+
 	signals, err := mpris.StartListening()
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Issue starting dbus listening")
@@ -24,7 +29,7 @@ func main() {
 	defer mpris.Close()
 
 	go scanInput(&logger)
-	metaChan := StartTextScroller(os.Stdout, 40, 50, 3000)
+	metaChan := StartTextScroller(pipes[PIPE_TITLE], 40, 50, 3000)
 	metaChan <- mpris.ActivePlayer.Meta
 
 	var data *mpris.Signal
@@ -37,8 +42,10 @@ func main() {
 		switch data.Type {
 		case mpris.TYPE_PLAYER_CHANGE:
 			mpris.SetActivePlayer()
+			metaChan <- mpris.ActivePlayer.Meta
 		case mpris.TYPE_STATUS_CHANGE:
 			mpris.ActivePlayer.State = data.Value.(bool)
+			pipes[PIPE_STATUS_ICON].Write([]byte(StatusIcon()))
 			logger.Info().Msg("Player status changed")
 		case mpris.TYPE_TRACK_CHANGE:
 			mpris.ActivePlayer.Meta = data.Value.(*mpris.Metadata)
@@ -89,6 +96,8 @@ func scanInput(logger *zerolog.Logger) {
 			} else {
 				fmt.Println(string(data))
 			}
+		case "a":
+			fmt.Printf("Active Player: %+v\r\n", mpris.ActivePlayer)
 		default:
 			logger.Info().Msg("Unkown command")
 		}

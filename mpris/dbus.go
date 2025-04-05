@@ -66,6 +66,7 @@ func SetActivePlayer() error {
 
 	if len(players) == 0 {
 		log.Debug().Msg("No active players found")
+		ActivePlayer = NilPlayer
 		return nil
 	}
 

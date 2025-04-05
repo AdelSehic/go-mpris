@@ -33,7 +33,7 @@ func main() {
 	metaChan := StartTextScroller(pipes[PIPE_TITLE], 25, 250, 3000)
 	if mpris.ActivePlayer != nil {
 		metaChan <- mpris.ActivePlayer.Meta
-		pipes[PIPE_STATUS_ICON].Write([]byte(StatusIcon()))
+		WriteStatusIcon()
 	}
 
 	logger.Debug().Msg("App set up")
@@ -48,9 +48,10 @@ func main() {
 		case mpris.TYPE_PLAYER_CHANGE:
 			mpris.SetActivePlayer()
 			metaChan <- mpris.ActivePlayer.Meta
+			pipes[PIPE_STATUS_ICON].Write([]byte(StatusIcon()))
 		case mpris.TYPE_STATUS_CHANGE:
 			mpris.ActivePlayer.State = data.Value.(bool)
-			pipes[PIPE_STATUS_ICON].Write([]byte(StatusIcon()))
+			WriteStatusIcon()
 			logger.Info().Msg("Player status changed")
 		case mpris.TYPE_TRACK_CHANGE:
 			mpris.ActivePlayer.Meta = data.Value.(*mpris.Metadata)
@@ -67,7 +68,7 @@ func scanInput(logger *zerolog.Logger) {
 	for {
 		scanner.Scan()
 		input := scanner.Text()
-		if mpris.ActivePlayer == nil || mpris.ActivePlayer.Name == mpris.SERVICE_MPRIS+".playerctld" {
+		if mpris.ActivePlayer == mpris.NilPlayer || mpris.ActivePlayer.Name == mpris.SERVICE_MPRIS+".playerctld" {
 			continue
 		}
 		switch input {

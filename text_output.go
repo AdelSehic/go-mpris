@@ -10,6 +10,9 @@ import (
 )
 
 func FormatMetadata(meta *mpris.Metadata) string {
+	if len(meta.Artist) == 0 || meta.Title == "" {
+		return "nothing playing . . ."
+	}
 	return fmt.Sprintf("%s - %s", strings.Join(meta.Artist, ", "), meta.Title)
 }
 
@@ -35,6 +38,12 @@ func StartTextScroller(w io.Writer, maxLength, interval, pauseLen int) chan *mpr
 				startIndex = 0
 				stopped = strLen < maxLength
 			case <-ticker.C:
+				if mpris.ActivePlayer == mpris.NilPlayer {
+					w.Write([]byte(" \n"))
+					startIndex = 0
+					WriteStatusIcon()
+					continue
+				}
 				if paused && time.Now().Before(pauseUntil) {
 					continue
 				}
@@ -56,9 +65,15 @@ func StartTextScroller(w io.Writer, maxLength, interval, pauseLen int) chan *mpr
 	return dataChan
 }
 
+func WriteStatusIcon() {
+	pipes[PIPE_STATUS_ICON].Write([]byte(StatusIcon()))
+}
+
 func StatusIcon() string {
 	statusIcon := "󰐊"
-	if mpris.ActivePlayer.State {
+	if mpris.ActivePlayer == mpris.NilPlayer {
+		statusIcon = ""
+	} else if mpris.ActivePlayer.State {
 		statusIcon = "󰏤"
 	}
 	return statusIcon + "\n"

@@ -14,6 +14,17 @@ type Player struct {
 	Meta   *Metadata
 }
 
+var NilPlayer = &Player{
+	Name:   "nil",
+	ID:     "nil",
+	State:  false,
+	Object: nil,
+	Meta: &Metadata{
+		Title:  "",
+		Artist: []string{""},
+	},
+}
+
 func SetPlayer(data *Signal) {
 	player := data.Value.(string)
 	state := false

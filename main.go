@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	logger.InitLogger(zerolog.ErrorLevel)
+	logger.InitLogger(zerolog.DebugLevel)
 	logger := logger.GetLogger()
 	mpris.InitLogger(logger)
 	logger.Info().Msg("Starting the application")
@@ -24,6 +24,8 @@ func main() {
 	defer mpris.Close()
 
 	go scanInput(&logger)
+	metaChan := StartTextScroller(os.Stdout, 40, 50, 3000)
+	metaChan <- mpris.ActivePlayer.Meta
 
 	var data *mpris.Signal
 	for signal := range signals {
@@ -40,6 +42,7 @@ func main() {
 			logger.Info().Msg("Player status changed")
 		case mpris.TYPE_TRACK_CHANGE:
 			mpris.ActivePlayer.Meta = data.Value.(*mpris.Metadata)
+			metaChan <- data.Value.(*mpris.Metadata)
 			logger.Info().Msg("Track changed")
 		default:
 			logger.Info().Str("Message type", data.Type).Msg("Recieved an unkown message type")

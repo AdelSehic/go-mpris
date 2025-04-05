@@ -1,5 +1,11 @@
 package mpris
 
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+)
+
 func (p *Player) PlayPause() {
 	call := p.Object.Call(PLAYER_PLAYPAUSE, 0)
 	if call.Err != nil {
@@ -33,4 +39,16 @@ func (p *Player) Previous() {
 	if call.Err != nil {
 		panic(call.Err)
 	}
+}
+
+func (p *Player) FormattedMetadata() string {
+	return fmt.Sprintf("%s - %s", strings.Join(p.Meta.Artist, ", "), p.Meta.Title)
+}
+
+func (p *Player) JSONMetadata() ([]byte, error) {
+	data, err := json.Marshal(p.Meta)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }

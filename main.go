@@ -39,7 +39,7 @@ func main() {
 			mpris.ActivePlayer.State = data.Value.(bool)
 			logger.Info().Msg("Player status changed")
 		case mpris.TYPE_TRACK_CHANGE:
-			fmt.Printf("Metadata: %+v", data.Value.(*mpris.Metadata))
+			mpris.ActivePlayer.Meta = data.Value.(*mpris.Metadata)
 			logger.Info().Msg("Track changed")
 		default:
 			logger.Info().Str("Message type", data.Type).Msg("Recieved an unkown message type")
@@ -77,6 +77,15 @@ func scanInput(logger *zerolog.Logger) {
 		case "m":
 			mpris.ActivePlayer.UpdatePlayerMetadata()
 			logger.WithLevel(zerolog.NoLevel).Any("Metadata", mpris.ActivePlayer.Meta).Msg("Player metadata")
+		case "t":
+			fmt.Println(mpris.ActivePlayer.FormattedMetadata())
+		case "j":
+			data, err := mpris.ActivePlayer.JSONMetadata()
+			if err != nil {
+				logger.Error().Err(err).Msg("Failed to marshall Metadata into JSON")
+			} else {
+				fmt.Println(string(data))
+			}
 		default:
 			logger.Info().Msg("Unkown command")
 		}

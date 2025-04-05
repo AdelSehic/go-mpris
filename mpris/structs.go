@@ -1,6 +1,8 @@
 package mpris
 
-import "github.com/godbus/dbus/v5"
+import (
+	"github.com/godbus/dbus/v5"
+)
 
 type Metadata struct {
 	TrackID string   `json:"track_id"`

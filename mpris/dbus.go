@@ -34,7 +34,7 @@ func StartListening() (chan *dbus.Signal, error) {
 	if err := conn.AddMatchSignal(
 		dbus.WithMatchInterface(DBUS_PROPERTIES),
 		dbus.WithMatchMember(PROPERTIES_CHANGED),
-		dbus.WithMatchSender(SERVICE_MPRIS),
+		dbus.WithMatchPathNamespace(OBJECT_MPRIS),
 	); err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func SetActivePlayer() error {
 	}
 
 	playerIndex := findPlayerByPriority(players)
-	SetPlayer(&Signal{Name: players[playerIndex]})
+	SetPlayer(&Signal{Value: players[playerIndex]})
 
 	return nil
 }

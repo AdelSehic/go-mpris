@@ -1,25 +1,61 @@
 package mpris
 
+import (
+	"errors"
+	"fmt"
+
+	"github.com/godbus/dbus/v5"
+)
+
+const (
+	TYPE_PLAYER_CHANGE = "player_change"
+	TYPE_TRACK_CHANGE  = "track_change"
+	TYPE_STATUS_CHANGE = "status_change"
+	TYPE_UNHANDLED     = "unhandled"
+
+	FIELD_PLAYBACK_STATUS = "PlaybackStatus"
+)
+
 type Signal struct {
-	Name     string
+	Value    any
 	OldOwner string
 	NewOwner string
 	Type     string
 }
 
-func ParseSignal(body []any) *Signal {
+func ParseSignal(body []any) (*Signal, error) {
 	name, ok1 := body[0].(string)
 	oldOwner, ok2 := body[1].(string)
 	newOwner, ok3 := body[2].(string)
 
 	if ok1 && ok2 && ok3 {
 		return &Signal{
-			Name:     name,
+			Type:     TYPE_PLAYER_CHANGE,
+			Value:    name,
 			OldOwner: oldOwner,
 			NewOwner: newOwner,
-		}
-	} else {
-		log.Error().Msgf("Unexpected signal format: %+v", body)
-		return nil
+		}, nil
 	}
+
+	dbusData, ok2 := body[1].(map[string]dbus.Variant)
+	if !ok2 {
+		return nil, errors.New(fmt.Sprintf("Unexpected signal format: %+v", body))
+	}
+
+	data := make(map[string]any, 0)
+	for k, v := range dbusData {
+		data[k] = v
+	}
+
+	if status, ok := data[FIELD_PLAYBACK_STATUS]; ok {
+		return &Signal{
+			Type:  TYPE_STATUS_CHANGE,
+			Value: status,
+		}, nil
+	}
+
+	return &Signal{
+		Type: TYPE_UNHANDLED,
+	}, nil
+
 }

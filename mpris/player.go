@@ -15,17 +15,18 @@ type Player struct {
 }
 
 func SetPlayer(data *Signal) {
+	player := data.Value.(string)
 	state := false
 	if data.NewOwner != "" {
 		state = true
 	}
-	playerObj := conn.Object(data.Name, OBJECT_MPRIS)
+	playerObj := conn.Object(player, OBJECT_MPRIS)
 	if playerObj == nil {
 		log.Error().Msg("Failed to create player object")
 		return
 	}
 	newPlayer := &Player{
-		Name:   data.Name,
+		Name:   player,
 		ID:     data.NewOwner,
 		State:  state,
 		Object: playerObj,

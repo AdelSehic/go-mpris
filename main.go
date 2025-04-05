@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	logger.InitLogger(zerolog.DebugLevel)
+	logger.InitLogger(zerolog.ErrorLevel)
 	logger := logger.GetLogger()
 	mpris.InitLogger(logger)
 	logger.Info().Msg("Starting the application")
@@ -24,14 +24,23 @@ func main() {
 
 	go scanInput(&logger)
 
+	var data *mpris.Signal
 	for signal := range signals {
-		logger.Debug().Msgf("New message: %+v", signal.Body...)
-		data := mpris.ParseSignal(signal.Body)
-		if data.NewOwner == "" {
-			mpris.SetActivePlayer()
+		logger.Debug().Msgf("New message: %+v", signal)
+		if data, err = mpris.ParseSignal(signal.Body); err != nil {
+			logger.Error().Err(err).Msg("Couldn't parse signal body")
 			continue
 		}
-		mpris.SetPlayer(data)
+		switch data.Type {
+		case mpris.TYPE_PLAYER_CHANGE:
+			mpris.SetActivePlayer()
+		case mpris.TYPE_STATUS_CHANGE:
+			logger.Info().Msg("Player status changed")
+		case mpris.TYPE_TRACK_CHANGE:
+			logger.Info().Msg("Track changed")
+		default:
+			logger.Info().Str("Message type", data.Type).Msg("Recieved an unkown message type")
+		}
 	}
 }
 
@@ -45,17 +54,26 @@ func scanInput(logger *zerolog.Logger) {
 		}
 		switch input {
 		case "p":
+			mpris.ActivePlayer.PlayPause()
+			logger.Info().Msg("Toggle")
+		case "d":
 			mpris.ActivePlayer.Play()
 			logger.Info().Msg("Playing")
 		case "s":
 			mpris.ActivePlayer.Pause()
 			logger.Info().Msg("Pausing")
+		case "n":
+			mpris.ActivePlayer.Next()
+			logger.Info().Msg("Next")
+		case "b":
+			mpris.ActivePlayer.Previous()
+			logger.Info().Msg("Previous")
 		case "l":
 			players, _ := mpris.GetActivePlayers()
-			logger.Info().Str("players", strings.Join(players, ", ")).Msg("Active players")
+			logger.WithLevel(zerolog.NoLevel).Str("players", strings.Join(players, ", ")).Msg("Active players")
 		case "m":
 			mpris.ActivePlayer.UpdatePlayerMetadata()
-			logger.Info().Any("Metadata", mpris.ActivePlayer.Metadata).Msg("Player metadata")
+			logger.WithLevel(zerolog.NoLevel).Any("Metadata", mpris.ActivePlayer.Metadata).Msg("Player metadata")
 		default:
 			logger.Info().Msg("Unkown command")
 		}

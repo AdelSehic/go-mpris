@@ -14,6 +14,7 @@ const (
 	TYPE_UNHANDLED     = "unhandled"
 
 	FIELD_PLAYBACK_STATUS = "PlaybackStatus"
+	FIELD_METADATA        = "Metadata"
 )
 
 type Signal struct {
@@ -48,9 +49,18 @@ func ParseSignal(body []any) (*Signal, error) {
 	}
 
 	if status, ok := data[FIELD_PLAYBACK_STATUS]; ok {
+		state := status.(dbus.Variant).String()
 		return &Signal{
 			Type:  TYPE_STATUS_CHANGE,
-			Value: status,
+			Value: state == STATUS_PLAYING,
+		}, nil
+	}
+
+	if dbusData, ok := data[FIELD_METADATA]; ok {
+		dataMap := dbusData.(dbus.Variant).Value().(map[string]dbus.Variant)
+		return &Signal{
+			Type:  TYPE_TRACK_CHANGE,
+			Value: parseMetadata(dataMap),
 		}, nil
 	}
 

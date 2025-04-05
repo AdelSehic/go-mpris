@@ -7,11 +7,11 @@ import (
 var ActivePlayer *Player
 
 type Player struct {
-	Name     string
-	ID       string
-	State    bool
-	Object   dbus.BusObject
-	Metadata map[string]any
+	Name   string
+	ID     string
+	State  bool
+	Object dbus.BusObject
+	Meta   *Metadata
 }
 
 func SetPlayer(data *Signal) {
@@ -73,10 +73,9 @@ func (p *Player) UpdatePlayerMetadata() {
 	}
 	log.Debug().Str("player", p.Name).Msg("Player metadata retrieved")
 
-	data := make(map[string]any)
-	for k, v := range rawData {
-		data[k] = v.Value()
-	}
+	p.Meta = parseMetadata(rawData)
+}
 
-	p.Metadata = data
+func (p *Player) SetNewMetadata(metadata *Metadata) {
+
 }

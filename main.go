@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"strings"
 
@@ -35,8 +36,10 @@ func main() {
 		case mpris.TYPE_PLAYER_CHANGE:
 			mpris.SetActivePlayer()
 		case mpris.TYPE_STATUS_CHANGE:
+			mpris.ActivePlayer.State = data.Value.(bool)
 			logger.Info().Msg("Player status changed")
 		case mpris.TYPE_TRACK_CHANGE:
+			fmt.Printf("Metadata: %+v", data.Value.(*mpris.Metadata))
 			logger.Info().Msg("Track changed")
 		default:
 			logger.Info().Str("Message type", data.Type).Msg("Recieved an unkown message type")
@@ -73,7 +76,7 @@ func scanInput(logger *zerolog.Logger) {
 			logger.WithLevel(zerolog.NoLevel).Str("players", strings.Join(players, ", ")).Msg("Active players")
 		case "m":
 			mpris.ActivePlayer.UpdatePlayerMetadata()
-			logger.WithLevel(zerolog.NoLevel).Any("Metadata", mpris.ActivePlayer.Metadata).Msg("Player metadata")
+			logger.WithLevel(zerolog.NoLevel).Any("Metadata", mpris.ActivePlayer.Meta).Msg("Player metadata")
 		default:
 			logger.Info().Msg("Unkown command")
 		}

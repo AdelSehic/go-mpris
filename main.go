@@ -17,21 +17,26 @@ func main() {
 	mpris.InitLogger(logger)
 	logger.Info().Msg("Starting the application")
 
-	pipes, err := StartPipes()
-	if err != nil {
+	if err := StartPipes(); err != nil {
 		logger.Fatal().Err(err).Msg("Couldn't start the pipes")
 	}
+	logger.Debug().Msg("Initialized the pipes")
 
 	signals, err := mpris.StartListening()
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Issue starting dbus listening")
 	}
 	defer mpris.Close()
+	logger.Debug().Msg("Dbus session initated")
 
 	go scanInput(&logger)
-	metaChan := StartTextScroller(pipes[PIPE_TITLE], 40, 50, 3000)
-	metaChan <- mpris.ActivePlayer.Meta
+	metaChan := StartTextScroller(pipes[PIPE_TITLE], 25, 250, 3000)
+	if mpris.ActivePlayer != nil {
+		metaChan <- mpris.ActivePlayer.Meta
+		pipes[PIPE_STATUS_ICON].Write([]byte(StatusIcon()))
+	}
 
+	logger.Debug().Msg("App set up")
 	var data *mpris.Signal
 	for signal := range signals {
 		logger.Debug().Msgf("New message: %+v", signal)

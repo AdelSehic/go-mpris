@@ -18,6 +18,7 @@ func StartTextScroller(w io.Writer, maxLength, interval, pauseLen int) chan *mpr
 	startIndex, endIndex, strLen := 0, 0, 0
 	output := ""
 	paused := true
+	stopped := false
 	pauseUntil := time.Now().Add(time.Duration(pauseLen) * time.Millisecond)
 
 	go func() {
@@ -30,8 +31,9 @@ func StartTextScroller(w io.Writer, maxLength, interval, pauseLen int) chan *mpr
 				endIndex = strLen + 2*maxLength
 				output = output + strings.Repeat(" ", maxLength) + output + strings.Repeat(" ", maxLength)
 				end := min(startIndex+maxLength, endIndex)
-				w.Write([]byte(output[startIndex:end] + "\r\n"))
+				w.Write([]byte(output[startIndex:end] + "\n"))
 				startIndex = 0
+				stopped = strLen < maxLength
 			case <-ticker.C:
 				if paused && time.Now().Before(pauseUntil) {
 					continue
@@ -42,9 +44,9 @@ func StartTextScroller(w io.Writer, maxLength, interval, pauseLen int) chan *mpr
 					pauseUntil = time.Now().Add(time.Duration(pauseLen) * time.Millisecond)
 				}
 				end := min(startIndex+maxLength, endIndex)
-				w.Write([]byte(output[startIndex:end] + "\r\n"))
+				w.Write([]byte(output[startIndex:end] + "\n"))
 				startIndex++
-				if !mpris.ActivePlayer.State {
+				if !mpris.ActivePlayer.State || stopped {
 					startIndex = 0
 				}
 			}
@@ -59,5 +61,5 @@ func StatusIcon() string {
 	if mpris.ActivePlayer.State {
 		statusIcon = "󰏤"
 	}
-	return statusIcon
+	return statusIcon + "\n"
 }

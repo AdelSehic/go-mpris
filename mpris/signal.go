@@ -51,7 +51,6 @@ func ParseSignal(body []any) (*Signal, error) {
 	if status, ok := data[FIELD_PLAYBACK_STATUS]; ok {
 		state := status.(dbus.Variant).String()
 		state = state[1 : len(state)-1]
-		fmt.Println(state)
 		return &Signal{
 			Type:  TYPE_STATUS_CHANGE,
 			Value: state == STATUS_PLAYING,

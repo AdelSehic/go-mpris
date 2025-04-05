@@ -13,26 +13,28 @@ const (
 
 var pipesToCreate = []string{PIPE_TITLE, PIPE_STATUS_ICON}
 
-func StartPipes() (map[string]*os.File, error) {
-	pipes := make(map[string]*os.File, 0)
+var pipes map[string]*os.File
+
+func StartPipes() error {
+	pipes = make(map[string]*os.File, 0)
 
 	if err := os.MkdirAll(DIR, 0755); err != nil {
-		return nil, err
+		return err
 	}
 
 	for _, pipeName := range pipesToCreate {
 		if _, err := os.Stat(pipeName); os.IsNotExist(err) {
 			if err := syscall.Mknod(pipeName, syscall.S_IFIFO|0666, 0); err != nil {
-				return nil, err
+				return err
 			}
 		}
 
 		pipeFile, err := os.OpenFile(pipeName, os.O_WRONLY|os.O_CREATE, os.ModeNamedPipe)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		pipes[pipeName] = pipeFile
 	}
 
-	return pipes, nil
+	return nil
 }
